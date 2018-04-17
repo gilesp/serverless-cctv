@@ -1,0 +1,11 @@
+[Unit]
+Description=Start recording the specified camera
+After=networking.service
+
+[Service]
+ExecStart=/usr/local/bin/record-camera.sh --username admin --password password --hostname camera.domain.com --port 554 --path /0 --output /home/user/camera1
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
