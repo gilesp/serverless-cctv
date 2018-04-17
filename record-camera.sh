@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-OPTIONs=`getopt -long username:,password:,hostname:,port:,path: -- "$@"`
+OPTIONS=`getopt -long username:,password:,hostname:,port:,path:,output: -- "$@"`
 eval set --"$OPTIONS"
 
 usage() {
@@ -9,6 +9,7 @@ usage() {
 }
 
 PORT=554
+OUTPUT_DIR=/tmp
 while true; do
     case "$1" in
         --username )
@@ -31,18 +32,28 @@ while true; do
             PATH="$2"
             shift 2
             ;;
+        --output )
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
         --) shift; break;;
         *) usage; break;;
     esac
 done
-AUTH_PART=
-if [ $USERNAME && $PASSWORD ]; then
+
+if [ $USERNAME ]; then
     AUTH_PART=$USERNAME:$PASSWORD@
 fi
 
-ffmpeg -i rtsp://$AUTH_PART$HOSTNAME:$PORT/$PATH \
-       -c copy \
-       -f segment \
-       -segment_time 900 \
-       -segment_atclocktime 1 \
-       -strftime 1 "%Y-%m-%d_%H-%M-%S.mp4"
+echo ffmpeg \
+     -loglevel panic \
+     -rtsp_transport tcp \
+     -i rtsp://$AUTH_PART$HOSTNAME:$PORT/$PATH \
+     -map 0:0 \
+     -c:v copy \
+     -an \
+     -f segment \
+     -reset_timestamps 1 \
+     -segment_time 900 \
+     -segment_atclocktime 1 \
+     -strftime 1 "$OUTPUT_DIR/%Y-%m-%d_%H-%M-%S.mp4"
